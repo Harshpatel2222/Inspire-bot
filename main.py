@@ -1,8 +1,10 @@
 import discord
+import os
 import requests
 import json
 import random
 from replit import db
+from always_on import always_on
 
 client = discord.Client()
 
@@ -13,6 +15,9 @@ starter_encouragements =[
   "Hang in there.",
   "You are a great person/bot!"
 ]
+
+if "responding" not in db.keys():
+  db["responding"] = True
 
 def get_quote():
   response = requests.get("https://zenquotes.io/api/random")
@@ -54,12 +59,13 @@ async def on_message(message):
     quote =get_quote()
     await message.channel.send(quote)
   
-  options = starter_encouragements
-  if "encouragements" in db.keys():
-     options.extend(db["encouragements"])
+  if db["responding"]:
+    options = starter_encouragements
+    if "encouragements" in db.keys():
+      options.extend(db["encouragements"])
 
-  if any(word in msg for word in sad_words):
-    await message.channel.send(random.choice(options))
+    if any(word in msg for word in sad_words):
+      await message.channel.send(random.choice(options))
 
   if msg.startswith("$new"):
     encouraging_message = msg.split("$new ",1)[1]
@@ -74,7 +80,21 @@ async def on_message(message):
       encouragements = db["encouragements"]
     await message.channel.send(encouragements)
 
+  if msg.startswith("$list"):
+    encouragements =[]
+    if "encouragements" in db.keys():
+      encouragements = db["encouragements"]
+    await message.channel.send(encouragements)
 
+  if msg.startswith("$responding"):
+    value = msg.split("$responding ",1)[1]
+
+    if value.lower() == "true":
+      db["responding"] = True
+      await message.channel.send("Responding is on.")
+    else:
+      db["responding"] = False
+      await message.channel.send("Responding is off.")
   
-
-client.run('ODQwNDg2OTg0MzQxMzg5MzIy.YJY6gA.GDle5NFFiV8UMujm7_-EP7U9MH8')
+always_on()
+client.run(os.getenv("TOKEN"))
